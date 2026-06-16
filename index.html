@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vọng Âm Cuối Hành Lang — Chương 1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0d0c10;
+    --panel:#17151c;
+    --panel-soft:#1d1a23;
+    --border:#2a2733;
+    --text:#ece8e1;
+    --text-dim:#9a95a3;
+    --blood:#c4453d;
+    --duong:#7c9fc4;
+    --khanh:#9b7fb8;
+    --vinh:#e0a458;
+    --hung:#5a8c6e;
+    --hien:#6fa8a0;
+    --nhan:#b8869e;
+    --da:#a85c4a;
+    --binh:#c9c08a;
+    --bach:#5d5a68;
+    --gold:#cfa86b;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;height:100%;
+    background:var(--bg);
+    font-family:'Be Vietnam Pro',sans-serif;
+    color:var(--text);
+    overflow:hidden;
+  }
+  #stage{
+    position:relative;
+    width:100%;height:100vh;
+    display:flex;
+    align-items:center;justify-content:center;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(124,159,196,0.05), transparent 60%),
+      radial-gradient(ellipse at 50% 100%, rgba(196,69,61,0.04), transparent 50%),
+      var(--bg);
+  }
+
+  /* faint vertical hallway lines for atmosphere */
+  #stage::before{
+    content:'';
+    position:absolute;inset:0;
+    background-image:repeating-linear-gradient(
+      90deg, transparent 0 7.5%, rgba(255,255,255,0.012) 7.5% 7.6%
+    );
+    pointer-events:none;
+  }
+
+  #scene-tag{
+    position:absolute;
+    top:28px; left:32px;
+    font-size:11px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    border-left:2px solid var(--border);
+    padding-left:10px;
+    line-height:1.5;
+    opacity:0;
+    transition:opacity 0.6s ease;
+  }
+  #scene-tag.show{opacity:1;}
+  #scene-tag .chapter{color:var(--gold); font-weight:600; display:block;}
+
+  /* trust ledger - signature element, top right */
+  #trust-ledger{
+    position:absolute;
+    top:24px; right:28px;
+    background:rgba(23,21,28,0.55);
+    border:1px solid var(--border);
+    border-radius:3px;
+    padding:10px 14px;
+    font-size:11px;
+    color:var(--text-dim);
+    min-width:150px;
+    backdrop-filter:blur(4px);
+    opacity:0;
+    transition:opacity 0.6s ease;
+  }
+  #trust-ledger.show{opacity:1;}
+  #trust-ledger .label{
+    text-transform:uppercase;
+    letter-spacing:0.14em;
+    font-size:9.5px;
+    color:var(--text-dim);
+    margin-bottom:6px;
+    border-bottom:1px solid var(--border);
+    padding-bottom:5px;
+  }
+  .trust-row{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-top:4px;
+    transition:opacity 0.3s;
+  }
+  .trust-row .name{font-weight:500;}
+  .trust-row .delta{
+    font-size:10px; font-weight:700;
+    opacity:0;
+    transition:opacity 0.4s, transform 0.4s;
+    transform:translateY(2px);
+  }
+  .trust-row .delta.flash{opacity:1; transform:translateY(0);}
+  .delta.up{color:#7fae8a;}
+  .delta.down{color:var(--blood);}
+
+  /* character silhouette / color blot */
+  #char-anchor{
+    position:absolute;
+    bottom:230px;
+    left:50%;
+    transform:translateX(-50%);
+    width:260px; height:340px;
+    display:flex; align-items:flex-end; justify-content:center;
+    pointer-events:none;
+  }
+  .char-figure{
+    position:absolute;
+    bottom:0;
+    width:220px; height:320px;
+    opacity:0;
+    transition:opacity 0.5s ease, transform 0.5s ease;
+    transform:translateY(12px);
+  }
+  .char-figure.active{opacity:1; transform:translateY(0);}
+  .char-figure svg{width:100%; height:100%;}
+
+  #narration-overlay{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:60px;
+    text-align:center;
+    pointer-events:none;
+  }
+  #narration-overlay.show{pointer-events:auto;}
+  #narration-text{
+    font-size:22px;
+    line-height:1.9;
+    color:var(--text);
+    font-weight:300;
+    max-width:680px;
+    opacity:0;
+    transition:opacity 0.8s ease;
+  }
+  #narration-text.show{opacity:1;}
+  #narration-text .accent{color:var(--blood); font-weight:600;}
+
+  /* dialogue box */
+  #dialogue-box{
+    position:absolute;
+    bottom:0; left:0; right:0;
+    padding:28px 0 36px;
+    background:linear-gradient(180deg, transparent, rgba(13,12,16,0.97) 22%, var(--bg) 60%);
+  }
+  #dialogue-inner{
+    max-width:920px;
+    margin:0 auto;
+    padding:0 36px;
+  }
+  #speaker-name{
+    display:inline-block;
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:0.04em;
+    padding:5px 16px;
+    border-radius:2px;
+    margin-bottom:10px;
+    background:var(--panel-soft);
+    border:1px solid var(--border);
+  }
+  #dialogue-panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:22px 26px;
+    min-height:92px;
+    box-shadow:0 -8px 30px rgba(0,0,0,0.4);
+    position:relative;
+  }
+  #dialogue-line{
+    font-size:17px;
+    line-height:1.75;
+    color:var(--text);
+    font-weight:400;
+  }
+  #advance-hint{
+    position:absolute;
+    bottom:10px; right:16px;
+    font-size:11px;
+    color:var(--text-dim);
+    opacity:0.6;
+    animation:pulse 1.6s infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:0.3;}50%{opacity:0.75;}}
+
+  #choices{
+    display:flex; flex-direction:column; gap:8px;
+    margin-top:14px;
+  }
+  .choice-btn{
+    background:var(--panel-soft);
+    border:1px solid var(--border);
+    color:var(--text);
+    font-family:'Be Vietnam Pro',sans-serif;
+    font-size:15px;
+    text-align:left;
+    padding:14px 18px;
+    border-radius:3px;
+    cursor:pointer;
+    transition:all 0.18s ease;
+    position:relative;
+  }
+  .choice-btn:hover{
+    background:#241f2c;
+    border-color:var(--gold);
+    transform:translateX(4px);
+  }
+  .choice-btn::before{
+    content:'▸';
+    margin-right:8px;
+    color:var(--text-dim);
+  }
+  .choice-btn:hover::before{color:var(--gold);}
+
+  #click-catcher{
+    position:absolute; inset:0;
+    cursor:pointer;
+    z-index:1;
+  }
+  #dialogue-box{ z-index:5; }
+  #choices, .choice-btn{ position:relative; z-index:6; }
+
+  /* title card */
+  #title-card{
+    position:absolute; inset:0;
+    background:var(--bg);
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    z-index:50;
+    transition:opacity 1s ease;
+  }
+  #title-card h1{
+    font-size:42px;
+    font-weight:800;
+    letter-spacing:0.02em;
+    margin:0;
+    color:var(--text);
+    text-shadow:0 0 40px rgba(196,69,61,0.25);
+  }
+  #title-card .sub{
+    margin-top:14px;
+    color:var(--text-dim);
+    font-size:14px;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+  }
+  #title-card .startbtn{
+    margin-top:48px;
+    background:transparent;
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:14px 38px;
+    font-size:14px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    cursor:pointer;
+    transition:all 0.25s ease;
+  }
+  #title-card .startbtn:hover{
+    border-color:var(--blood);
+    color:var(--blood);
+    letter-spacing:0.16em;
+  }
+  .fade-hidden{opacity:0; pointer-events:none;}
+
+  #flash{
+    position:absolute; inset:0;
+    background:#fff;
+    opacity:0;
+    pointer-events:none;
+    z-index:40;
+  }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div id="flash"></div>
+
+  <div id="title-card">
+    <h1>VỌNG ÂM CUỐI HÀNH LANG</h1>
+    <div class="sub">Chương 1 — Đêm Khai Giảng</div>
+    <button class="startbtn" id="start-btn">Bắt đầu</button>
+  </div>
+
+  <div id="scene-tag"><span class="chapter">Chương 1</span><span id="scene-tag-text">Đêm Khai Giảng</span></div>
+
+  <div id="trust-ledger">
+    <div class="label">Ghi chú điều tra</div>
+    <div class="trust-row" data-char="khanh"><span class="name" style="color:var(--khanh)">Khanh</span><span class="delta"></span></div>
+    <div class="trust-row" data-char="vinh"><span class="name" style="color:var(--vinh)">Vinh</span><span class="delta"></span></div>
+    <div class="trust-row" data-char="hung"><span class="name" style="color:var(--hung)">Hưng</span><span class="delta"></span></div>
+    <div class="trust-row" data-char="hien"><span class="name" style="color:var(--hien)">Hiển</span><span class="delta"></span></div>
+    <div class="trust-row" data-char="nhan"><span class="name" style="color:var(--nhan)">Nhân</span><span class="delta"></span></div>
+    <div class="trust-row" data-char="da"><span class="name" style="color:var(--da)">Dã</span><span class="delta"></span></div>
+    <div class="trust-row" data-char="binh"><span class="name" style="color:var(--binh)">Bình</span><span class="delta"></span></div>
+    <div class="trust-row" data-char="bach"><span class="name" style="color:var(--bach)">Bách</span><span class="delta"></span></div>
+  </div>
+
+  <div id="char-anchor"></div>
+
+  <div id="narration-overlay">
+    <div id="narration-text"></div>
+  </div>
+
+  <div id="dialogue-box" style="display:none;">
+    <div id="dialogue-inner">
+      <div id="speaker-name" style="display:none;"></div>
+      <div id="dialogue-panel">
+        <div id="dialogue-line"></div>
+        <div id="advance-hint">click để tiếp tục ▾</div>
+        <div id="choices" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="click-catcher"></div>
+</div>
+
+<script>
+/* ================= CHARACTER FIGURES (SVG silhouettes, color-coded) ================= */
+const CHAR_COLORS = {
+  duong: '#7c9fc4',
+  khanh: '#9b7fb8',
+  vinh:  '#e0a458',
+  hung:  '#5a8c6e',
+  hien:  '#6fa8a0',
+  nhan:  '#b8869e',
+  da:    '#a85c4a',
+  binh:  '#c9c08a',
+  bach:  '#5d5a68',
+  narrator: '#cfa86b'
+};
+
+function figureSVG(color){
+  return `<svg viewBox="0 0 220 320" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="g-${color.replace('#','')}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${color}" stop-opacity="0.85"/>
+        <stop offset="100%" stop-color="${color}" stop-opacity="0.35"/>
+      </linearGradient>
+    </defs>
+    <ellipse cx="110" cy="60" rx="38" ry="42" fill="url(#g-${color.replace('#','')})"/>
+    <path d="M60 300 Q55 170 75 130 Q90 105 110 105 Q130 105 145 130 Q165 170 160 300 Z"
+      fill="url(#g-${color.replace('#','')})"/>
+  </svg>`;
+}
+
+const charAnchor = document.getElementById('char-anchor');
+const figures = {};
+['duong','khanh','vinh','hung','hien','nhan','da','binh','bach'].forEach(id=>{
+  const div = document.createElement('div');
+  div.className = 'char-figure';
+  div.id = 'fig-'+id;
+  div.innerHTML = figureSVG(CHAR_COLORS[id]);
+  charAnchor.appendChild(div);
+  figures[id] = div;
+});
+
+function showFigure(id){
+  Object.values(figures).forEach(f=>f.classList.remove('active'));
+  if(id && figures[id]) figures[id].classList.add('active');
+}
+
+/* ================= TRUST SYSTEM ================= */
+let trust = { khanh:0, vinh:0, hung:0, hien:0, nhan:0, da:0, binh:0, bach:0 };
+
+function adjustTrust(charId, amount){
+  trust[charId] += amount;
+  const row = document.querySelector(`.trust-row[data-char="${charId}"] .delta`);
+  if(!row) return;
+  row.textContent = (amount>0?'+':'') + amount;
+  row.className = 'delta flash ' + (amount>0?'up':'down');
+  setTimeout(()=>{ row.classList.remove('flash'); }, 2200);
+}
+
+/* ================= SCRIPT ENGINE ================= */
+const sceneTagText = document.getElementById('scene-tag-text');
+const sceneTag = document.getElementById('scene-tag');
+const trustLedger = document.getElementById('trust-ledger');
+const narrationOverlay = document.getElementById('narration-overlay');
+const narrationText = document.getElementById('narration-text');
+const dialogueBox = document.getElementById('dialogue-box');
+const speakerName = document.getElementById('speaker-name');
+const dialogueLine = document.getElementById('dialogue-line');
+const advanceHint = document.getElementById('advance-hint');
+const choicesEl = document.getElementById('choices');
+const clickCatcher = document.getElementById('click-catcher');
+const flash = document.getElementById('flash');
+
+let script = [];
+let idx = 0;
+let waitingForChoice = false;
+
+function setSceneTag(text){
+  sceneTagText.textContent = text;
+}
+
+function showNarration(html){
+  dialogueBox.style.display = 'none';
+  narrationOverlay.classList.add('show');
+  narrationText.classList.remove('show');
+  showFigure(null);
+  narrationText.innerHTML = html;
+  requestAnimationFrame(()=>{
+    setTimeout(()=> narrationText.classList.add('show'), 30);
+  });
+}
+
+function showDialogue(speakerId, name, line){
+  narrationOverlay.classList.remove('show');
+  narrationText.classList.remove('show');
+  dialogueBox.style.display = 'block';
+  choicesEl.style.display = 'none';
+  advanceHint.style.display = 'block';
+
+  if(speakerId === null){
+    speakerName.style.display = 'none';
+    showFigure(null);
+  } else {
+    speakerName.style.display = 'inline-block';
+    speakerName.textContent = name;
+    speakerName.style.color = CHAR_COLORS[speakerId] || '#ece8e1';
+    speakerName.style.borderColor = (CHAR_COLORS[speakerId]||'#2a2733') + '55';
+    showFigure(speakerId);
+  }
+  dialogueLine.innerHTML = line;
+}
+
+function showChoices(options){
+  advanceHint.style.display = 'none';
+  choicesEl.style.display = 'flex';
+  choicesEl.innerHTML = '';
+  options.forEach(opt=>{
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = opt.text;
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      if(opt.trust){
+        adjustTrust(opt.trust.char, opt.trust.amount);
+      }
+      waitingForChoice = false;
+      idx++;
+      render();
+    };
+    choicesEl.appendChild(btn);
+  });
+  waitingForChoice = true;
+}
+
+function doFlash(cb){
+  flash.style.transition = 'opacity 0.08s';
+  flash.style.opacity = '0.9';
+  setTimeout(()=>{
+    flash.style.transition = 'opacity 0.5s';
+    flash.style.opacity = '0';
+  }, 90);
+  setTimeout(cb, 120);
+}
+
+function render(){
+  if(idx >= script.length){
+    showNarration(`<span class="accent">— Hết phần demo —</span><br><br>
+      Câu chuyện còn tiếp diễn trong các chương sau, khi Dương phải ghép từng mảnh
+      lời khai rời rạc lại với nhau, trước khi loa trường vang lên một lần nữa.`);
+    return;
+  }
+  const step = script[idx];
+
+  if(step.scene) setSceneTag(step.scene);
+
+  switch(step.type){
+    case 'narration':
+      showNarration(step.html);
+      break;
+    case 'dialogue':
+      showDialogue(step.speaker, step.name, step.html);
+      break;
+    case 'choice':
+      // render the prompt line first as dialogue, then show choices
+      showDialogue(step.speaker || null, step.name || '', step.html || '');
+      showChoices(step.options);
+      break;
+    case 'flash':
+      doFlash(()=>{ idx++; render(); });
+      return;
+  }
+}
+
+function advance(){
+  if(waitingForChoice) return;
+  idx++;
+  render();
+}
+
+clickCatcher.addEventListener('click', advance);
+
+/* ================= CHAPTER 1 SCRIPT ================= */
+script = [
+  {type:'narration', scene:'Đêm Khai Giảng', html:
+    `Mưa đã rơi suốt từ chiều. Trường nội trú Minh Tâm nằm im trên đồi,
+    những ô cửa sổ vàng vọt hắt ánh sáng yếu ớt ra khoảng sân ướt.`},
+
+  {type:'narration', html:
+    `Đây là năm đầu tiên Dương đặt chân đến Minh Tâm — một ngôi trường
+    cũ kỹ, bị cô lập khỏi thành phố mỗi khi mùa mưa khiến con đường
+    duy nhất dẫn ra ngoài ngập nước.`},
+
+  {type:'narration', html:
+    `Chín học sinh được xếp ở lại đêm khai giảng để chuẩn bị cho lễ
+    sáng mai: Dương, Khanh, Vinh, Nhân, Dã, Hiển, Bình, Hưng, và Bách
+    — người luôn đứng tách biệt khỏi đám đông.`},
+
+  {type:'dialogue', speaker:'duong', name:'Dương', html:
+    `Lạ thật. Cổng trường đáng lẽ phải mở đến chín giờ tối...`},
+
+  {type:'narration', html:
+    `Một tiếng <em>cạch</em> khô khốc vang lên từ phía cổng sắt.
+    Dương quay lại — vừa kịp thấy ổ khóa tự động sập xuống, không có
+    ai chạm vào nó.`},
+
+  {type:'flash'},
+
+  {type:'narration', html:
+    `Hệ thống loa cũ của trường, thứ đã im lặng từ lâu, bất ngờ phát ra
+    một tiếng rít nhẹ — như ai đó vừa cầm micro lên rồi lại đặt xuống.`},
+
+  {type:'dialogue', speaker:'khanh', name:'Khanh', html:
+    `<span style="color:var(--khanh)">...Cổng vừa khóa rồi.</span>
+    Tớ thấy từ trong cửa sổ phòng sinh hoạt.`},
+
+  {type:'choice', speaker:'duong', name:'Dương', html:
+    `Khanh đứng nép vào góc hành lang, một tay đẩy gọng kính to quá cỡ
+    lên sống mũi, tay khác siết chặt cây thập tự đeo cổ. Dương nên hỏi gì?`,
+    options:[
+      {text:'"Khanh có thấy ai ở gần cổng trước khi nó khóa không?"',
+       trust:{char:'khanh', amount:1}},
+      {text:'"Chắc do trục trặc điện thôi, đừng lo."',
+       trust:{char:'khanh', amount:-1}},
+    ]
+  },
+
+  {type:'dialogue', speaker:'khanh', name:'Khanh', html:
+    `Khanh im lặng một lúc lâu, ánh mắt tránh nhìn thẳng vào Dương,
+    chỉ lúng túng vê vê dây cây thập tự.<br><br>
+    <span style="color:var(--khanh)">...Không. Tớ không thấy ai cả.</span>
+    Giọng Khanh hơi run, như đang cố giữ một điều gì không muốn nói ra.`},
+
+  {type:'narration', scene:'Phòng Sinh Hoạt Chung', html:
+    `Cả nhóm chín học sinh tụ lại trong phòng sinh hoạt, nơi duy nhất
+    còn ánh đèn sáng đều. Mưa gõ lên cửa sổ không ngừng.`},
+
+  {type:'dialogue', speaker:'vinh', name:'Vinh', html:
+    `<span style="color:var(--vinh)">Thôi nào, chắc thầy hiệu trưởng
+    khóa cổng sớm vì sợ đứa nào trốn ra ngoài chơi đêm khai giảng
+    thôi mà!</span> Vinh cười, nhưng tiếng cười nghe gượng hơn thường lệ,
+    ngắt giữa câu như chưa kịp nghĩ xong đã buột miệng nói.`},
+
+  {type:'dialogue', speaker:'hien', name:'Hiển', html:
+    `<span style="color:var(--hien)">Mọi người giữ bình tĩnh.</span>
+    Hiển đứng dậy, giọng điềm đạm như đang điều hành một buổi họp lớp.
+    <span style="color:var(--hien)">Chắc nhà trường có quy trình riêng,
+    chúng ta cứ tin vào quy trình là được.</span>`},
+
+  {type:'dialogue', speaker:'da', name:'Dã', html:
+    `<span style="color:var(--da)">Tin vào quy trình?</span> Dã khoanh
+    tay, nhìn Hiển với ánh mắt khinh khỉnh.
+    <span style="color:var(--da)">Quy trình của ai? Người lớn ở đây
+    không phải lúc nào cũng đáng tin đâu.</span>`},
+
+  {type:'choice', speaker:'duong', name:'Dương', html:
+    `Câu nói của Dã có gì đó chua chát hơn một lời nói bâng quơ thông
+    thường. Dương nên làm gì?`,
+    options:[
+      {text:'"Dã, cậu nói vậy là có ý gì cụ thể?"',
+       trust:{char:'da', amount:1}},
+      {text:'(Ghi nhớ trong đầu, không hỏi thẳng lúc này.)',
+       trust:{char:'da', amount:0}},
+    ]
+  },
+
+  {type:'dialogue', speaker:'da', name:'Dã', html:
+    `Dã siết chặt quai túi, quay mặt đi.<br><br>
+    <span style="color:var(--da)">...Không có ý gì. Quên đi.</span>
+    Nhưng ánh mắt Dã vẫn còn vương lại một nỗi gì đó rất cũ, rất sâu.`},
+
+  {type:'dialogue', speaker:'nhan', name:'Nhân', html:
+    `<span style="color:var(--nhan)">Trường này có truyền thống gì đặc
+    biệt không?</span> Nhân, học sinh chuyển trường mới nhập học hôm
+    nay, hỏi nhỏ — nghe như tò mò vô hại, nhưng ánh mắt lại quan sát
+    phản ứng của từng người trong phòng rất kỹ.`},
+
+  {type:'dialogue', speaker:'hung', name:'Hưng', html:
+    `<span style="color:var(--hung)">Tao vừa từ phòng giáo viên
+    xuống.</span> Hưng đứng dựa vào khung cửa, vẻ mặt nặng nề khác hẳn
+    mọi khi. <span style="color:var(--hung)">Thầy hiệu trưởng vẫn còn
+    thức, đèn phòng ông ấy vẫn sáng.</span>`},
+
+  {type:'choice', speaker:'duong', name:'Dương', html:
+    `Hưng nói xong liền quay đi, tránh ánh mắt của mọi người. Dương
+    nên phản ứng thế nào?`,
+    options:[
+      {text:'"Hưng, cậu có vẻ không ổn. Có chuyện gì vậy?"',
+       trust:{char:'hung', amount:1}},
+      {text:'(Im lặng quan sát, không hỏi gì.)',
+       trust:{char:'hung', amount:0}},
+      {text:'"Sao cậu lại lên phòng giáo viên giờ này?"',
+       trust:{char:'hung', amount:-1}},
+    ]
+  },
+
+  {type:'dialogue', speaker:'hung', name:'Hưng', html:
+    `Hưng siết chặt tay, hàm nghiến lại.<br><br>
+    <span style="color:var(--hung)">...Không có gì. Tao chỉ lo thôi.</span>
+    Cách Hưng né tránh câu hỏi khiến không khí trong phòng càng nặng hơn.`},
+
+  {type:'narration', html:
+    `Ở góc xa nhất của phòng, Bách đứng tách biệt, không tham gia câu
+    chuyện nào. Ánh mắt Bách lặng lẽ quan sát từng người — không phải
+    kiểu quan sát ngẫu nhiên, mà như đang đối chiếu một danh sách
+    trong đầu.`},
+
+  {type:'dialogue', speaker:'vinh', name:'Vinh', html:
+    `<span style="color:var(--vinh)">Ê ê, thôi đừng căng thẳng nữa,
+    để tao kể chuyện cười cho nghe—</span><br><br>
+    Vinh định pha trò, nhưng giọng đột nhiên nhỏ lại khi nhìn ra ngoài
+    cửa sổ tối đen. Ngay sau đó, Vinh lặng lẽ đứng dậy, nói nhỏ là cần
+    ra ngoài một chút, rồi rời phòng sinh hoạt mà không giải thích.`},
+
+  {type:'narration', html:
+    `Bình, ngồi co ro ở góc ghế, không nói một lời suốt từ đầu. Khi
+    Dương vô tình nhìn sang, Bình giật mình quay đi, hai tay siết chặt
+    vào nhau như đang tự trấn an chính mình.`},
+
+  {type:'narration', scene:'Đêm Khuya', html:
+    `Đêm trôi qua trong im lặng nặng nề. Không ai ngủ được trọn vẹn.
+    Tiếng mưa, tiếng gió luồn qua khe cửa, và đôi lúc — tiếng rít nhỏ
+    phát ra từ loa trường, như có ai đang thử mở một kênh phát thanh
+    đã chết từ lâu.`},
+
+  {type:'narration', html:
+    `Ở hành lang tầng trên, gần phòng làm việc của hiệu trưởng, một
+    bóng người nhỏ thoắt ẩn sau góc tường khi nghe tiếng bước chân.
+    Không ai kịp nhìn rõ mặt.`},
+
+  {type:'flash'},
+
+  {type:'narration', scene:'Sáng Hôm Sau', html:
+    `Tiếng la hét xé toang sự im lặng của buổi sáng.<br><br>
+    Cửa phòng làm việc của thầy hiệu trưởng — khóa trái từ bên trong
+    — bị phá ra. Bên trong, ông ngồi gục trên bàn, một <span class="accent">
+    nụ cười kỳ lạ</span> đông cứng trên mặt. Không một vết thương nào
+    trên cơ thể. Một chiếc tách trà đã cạn đặt cạnh tay ông.`},
+
+  {type:'narration', html:
+    `Trên tường, ai đó đã viết bằng phấn trắng, nét chữ run rẩy:<br><br>
+    <span class="accent" style="font-size:26px; font-weight:700; letter-spacing:0.03em;">
+    "Đứa nào cũng nói dối."</span>`},
+
+  {type:'dialogue', speaker:'duong', name:'Dương', html:
+    `Dương đứng ở ngưỡng cửa, tim đập dồn. Tám người còn lại đứng sau,
+    không ai dám bước vào thêm.<br><br>
+    <em>Cổng trường tự khóa đêm qua. Loa trường bỗng sống lại sau
+    nhiều năm im lặng. Và giờ — một cái chết không lời giải thích,
+    cùng một câu nói treo lơ lửng trên tường.</em>`},
+
+  {type:'dialogue', speaker:'khanh', name:'Khanh', html:
+    `Khanh lùi lại một bước, mặt trắng bệch, hai tay ôm chặt lấy
+    khuỷu tay mình, kính suýt rơi khỏi sống mũi.<br><br>
+    <span style="color:var(--khanh)">...Tớ... tớ không thấy gì cả.</span>
+    Nhưng ánh mắt Khanh, chỉ trong một khoảnh khắc, đã lướt qua phía
+    cuối hành lang — nơi Bình đang đứng im, mặt cúi gằm, không dám
+    nhìn vào trong phòng.`},
+
+  {type:'dialogue', speaker:'vinh', name:'Vinh', html:
+    `<span style="color:var(--vinh)">...Không ai trong tụi mình làm
+    chuyện này được. Cổng khóa, không ai ra vào được hết mà!</span><br><br>
+    Giọng Vinh lần này không còn chút hài hước nào. Nhưng Dương nhớ
+    rõ — tối qua, Vinh đã rời phòng sinh hoạt một lúc lâu, không nói
+    đi đâu.`},
+
+  {type:'choice', speaker:'duong', name:'Dương', html:
+    `Dương nhớ lại: Vinh đã biến mất khỏi phòng sinh hoạt đúng vào
+    khoảng thời gian Hưng nói thầy hiệu trưởng còn thức. Có nên hỏi
+    thẳng ngay lúc này, trước mặt mọi người?`,
+    options:[
+      {text:'"Vinh, tối qua cậu ra ngoài làm gì?" (hỏi thẳng, trước mặt cả nhóm)',
+       trust:{char:'vinh', amount:-1}},
+      {text:'(Im lặng, để hỏi riêng Vinh sau.)',
+       trust:{char:'vinh', amount:1}},
+    ]
+  },
+
+  {type:'dialogue', speaker:'hien', name:'Hiển', html:
+    `<span style="color:var(--hien)">Mọi người đừng vội kết luận gì
+    cả.</span> Hiển bước lên, đứng giữa phòng như đang cố lấy lại
+    quyền kiểm soát tình hình.
+    <span style="color:var(--hien)">Chúng ta nên đợi xem ai có chứng
+    cứ rõ ràng trước khi nghi ngờ lẫn nhau.</span>`},
+
+  {type:'dialogue', speaker:'nhan', name:'Nhân', html:
+    `Nhân đứng lùi ra sau, quan sát phản ứng của cả nhóm hơn là nhìn
+    vào hiện trường.<br><br>
+    <span style="color:var(--nhan)">...Dòng chữ phấn này. Tớ từng thấy
+    kiểu này ở trường cũ của tớ rồi.</span> Nhân nói, rồi im bặt, như
+    vừa lỡ lời.`},
+
+  {type:'choice', speaker:'duong', name:'Dương', html:
+    `Câu nói của Nhân khiến cả phòng im lặng. Dương nên hỏi thêm ngay
+    không?`,
+    options:[
+      {text:'"Trường cũ của cậu cũng từng có chuyện này?"',
+       trust:{char:'nhan', amount:1}},
+      {text:'(Chưa hỏi ngay, để Nhân tự nói tiếp nếu muốn.)',
+       trust:{char:'nhan', amount:0}},
+    ]
+  },
+
+  {type:'dialogue', speaker:'nhan', name:'Nhân', html:
+    `Nhân siết môi, ánh mắt thoáng dao động rồi trở lại bình thản.<br><br>
+    <span style="color:var(--nhan)">...Không. Tớ nhầm. Chắc chỉ là
+    trùng hợp.</span> Nhưng cách Nhân tránh ánh mắt mọi người sau câu
+    nói đó lại nói lên điều ngược lại.`},
+
+  {type:'dialogue', speaker:'hung', name:'Hưng', html:
+    `Hưng đứng lặng, nhìn vào dòng chữ phấn trên tường lâu hơn bất kỳ
+    ai khác.<br><br>
+    <span style="color:var(--hung)">...Đứa nào cũng nói dối sao.</span>
+    Hưng lẩm bẩm, gần như không phải đang nói với ai trong phòng, tay
+    siết lại thành nắm đấm.`},
+
+  {type:'narration', html:
+    `Bách đứng ngoài cùng đám đông, không tỏ ra hoảng loạn như những
+    người khác. Ánh mắt Bách dừng lại rất lâu trên dòng chữ phấn —
+    không phải sự kinh hãi, mà gần như là một sự xác nhận lặng lẽ
+    cho điều gì đó Bách đã biết trước.`},
+
+  {type:'choice', speaker:'duong', name:'Dương', html:
+    `Trong tất cả phản ứng hỗn loạn, sự bình thản bất thường của Bách
+    là điều khiến Dương để ý nhất. Có nên tiếp cận Bách ngay lúc này?`,
+    options:[
+      {text:'"Bách, cậu không có vẻ sốc như mọi người. Sao vậy?"',
+       trust:{char:'bach', amount:1}},
+      {text:'(Quan sát thêm, chưa hỏi vội — Bách không phải kiểu người dễ mở lòng.)',
+       trust:{char:'bach', amount:0}},
+    ]
+  },
+
+  {type:'dialogue', speaker:'bach', name:'Bách', html:
+    `Bách quay sang nhìn Dương, ánh mắt sắc nhưng không có chút bối
+    rối nào.<br><br>
+    <span style="color:var(--bach)">Sốc không giúp tìm ra sự thật.</span>
+    Bách nói rồi quay đi, từng câu chữ như đã được chuẩn bị từ trước,
+    không phải phản ứng tự nhiên của một người vừa chứng kiến án mạng.`},
+
+  {type:'narration', html:
+    `Riêng Bình vẫn không nói một lời nào từ đầu đến cuối, chỉ đứng
+    nép sau Khanh, mặt cúi gằm, hai tay run nhẹ không ngừng.`},
+
+  {type:'narration', scene:'Bắt Đầu Nghi Ngờ', html:
+    `Chín học sinh, một cánh cổng khóa kín, một cái chết không lời
+    giải, và giờ đây — không ai còn nhìn nhau bằng con mắt như trước
+    nữa.<br><br>
+    Khanh giữ im lặng về điều mình thấy. Vinh giữ im lặng về nơi mình
+    đã đến. Nhân giữ im lặng về trường cũ. Hưng giữ im lặng về cuộc
+    gặp với hiệu trưởng. Hiển cố gắng kiểm soát một tình huống đã vượt
+    khỏi tầm kiểm soát của bất kỳ ai. Và Bách — lặng lẽ hơn tất cả —
+    dường như đã biết trước điều này sẽ xảy ra.`},
+
+  {type:'dialogue', speaker:'duong', name:'Dương', html:
+    `Dương nhìn quanh phòng, từng người một.<br><br>
+    <em>Đứa nào cũng nói dối — không phải lời đe dọa của kẻ giết
+    người. Có thể, đó là sự thật đơn giản nhất về tất cả những người
+    đang có mặt trong căn phòng này.</em>`},
+];
+
+
+
+/* ================= START ================= */
+document.getElementById('start-btn').addEventListener('click', ()=>{
+  document.getElementById('title-card').classList.add('fade-hidden');
+  sceneTag.classList.add('show');
+  trustLedger.classList.add('show');
+  setTimeout(()=>{
+    render();
+  }, 400);
+});
+</script>
+
+</body>
+</html>
